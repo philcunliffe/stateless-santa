@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Santa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+     @keyframes text-shimmer {
+       0% { background-position: 0% 50%; }
+       50% { background-position: 100% 50%; }
+       100% { background-position: 0% 50%; }
+     }
+     .animate-text-shimmer {
+       animation: text-shimmer 3s linear infinite;
+     }
+     ::-webkit-scrollbar {
+       width: 8px;
+     }
+     ::-webkit-scrollbar-track {
+       background: rgba(30, 41, 59, 0.5);
+     }
+     ::-webkit-scrollbar-thumb {
+       background: #475569;
+       border-radius: 4px;
+     }
+     ::-webkit-scrollbar-thumb:hover {
+       background: #64748b;
+     }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 font-sans selection:bg-red-500 selection:text-white flex flex-col items-center py-12 px-4 relative overflow-x-hidden min-h-screen">
+
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20 z-0">
+      <div class="absolute top-10 left-10 text-slate-700 animate-pulse">
+        <i data-lucide="sparkles" width="48" height="48"></i>
+      </div>
+      <div class="absolute bottom-20 right-10 text-slate-700 animate-bounce">
+        <i data-lucide="gift" width="64" height="64"></i>
+      </div>
+    </div>
+
+    <header class="z-10 mb-8 text-center">
+      <div class="flex items-center justify-center gap-3 mb-2">
+        <i data-lucide="gift" class="text-red-500" width="32" height="32"></i>
+        <h1 class="text-4xl font-extrabold tracking-tight text-white">
+          Secret <span class="text-red-500">Santa</span>
+        </h1>
+      </div>
+      <p class="text-slate-400">Stateless, client-side, magic.</p>
+    </header>
+
+    <main class="z-10 w-full max-w-md bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl p-6 sm:p-8 transition-all duration-300">
+      <div id="app-content">
+        <div class="text-center text-slate-400 py-8">Loading North Pole Database...</div>
+      </div>
+    </main>
+
+    <script>
+     function mulberry32(a) {
+       return function() {
+         var t = a += 0x6D2B79F5;
+         t = Math.imul(t ^ (t >>> 15), t | 1);
+         t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+       }
+     }
+
+     function shuffle(array, rng) {
+       let currentIndex = array.length, randomIndex;
+       const newArray = [...array];
+       while (currentIndex !== 0) {
+         randomIndex = Math.floor(rng() * currentIndex);
+         currentIndex--;
+         [newArray[currentIndex], newArray[randomIndex]] = [
+           newArray[randomIndex], newArray[currentIndex]];
+       }
+       return newArray;
+     }
+
+     function getAssignment(userName, allNames, seed) {
+       const rng = mulberry32(seed);
+       const baseList = [...allNames].sort();
+       const listA = shuffle(baseList, rng);
+       const listB = shuffle(baseList, rng);
+
+       const indexInA = listA.indexOf(userName);
+       if (indexInA === -1) return null;
+       return listB[indexInA];
+     }
+
+     function isSeedValid(names, seed) {
+       for (const name of names) {
+         const assigned = getAssignment(name, names, seed);
+         if (assigned === name) return false;
+       }
+       return true;
+     }
+
+     const encodeData = (data) => {
+       try { return btoa(encodeURIComponent(JSON.stringify(data))); }
+       catch (e) { return ""; }
+     };
+
+     const decodeData = (str) => {
+       try { return JSON.parse(decodeURIComponent(atob(str))); }
+       catch (e) { return null; }
+     };
+
+     const state = {
+       mode: 'loading',
+       names: [],
+       seed: null,
+       generatedLink: '',
+       currentUser: '',
+       assignment: null,
+       isLocked: false,
+       reveal: false
+     };
+
+     function render() {
+       const container = document.getElementById('app-content');
+       container.innerHTML = '';
+
+       if (state.mode === 'create') {
+         renderCreateMode(container);
+       } else if (state.mode === 'view') {
+         renderViewMode(container);
+       }
+
+       lucide.createIcons();
+     }
+
+     function renderCreateMode(container) {
+       const html = `
+         <div class="space-y-6">
+           <div class="space-y-2">
+             <h2 class="text-xl font-semibold flex items-center gap-2 text-white">
+               <i data-lucide="user" class="text-red-400" width="20"></i>
+               Add Participants
+             </h2>
+             <form id="add-form" class="flex gap-2">
+               <input type="text" id="new-name-input" placeholder="Enter name (e.g. Alice)"
+                      class="flex-1 bg-slate-900/80 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 outline-none transition-all placeholder:text-slate-600">
+               <button type="submit" id="add-btn" disabled
+                       class="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                 Add
+               </button>
+             </form>
+             <div class="flex items-center gap-2 text-sm">
+               <button id="import-btn" class="text-slate-400 hover:text-slate-300 underline">
+                 Import comma-separated list
+               </button>
+             </div>
+             <div id="import-section" class="hidden space-y-2">
+               <textarea id="import-input" placeholder="e.g. Alice, Bob, Charlie"
+                         class="w-full bg-slate-900/80 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 outline-none transition-all placeholder:text-slate-600 text-sm" rows="2"></textarea>
+               <div class="flex gap-2">
+                 <button id="import-submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors">
+                   Import
+                 </button>
+                 <button id="import-cancel" class="text-slate-400 hover:text-slate-300 px-3 py-1 text-sm">
+                   Cancel
+                 </button>
+               </div>
+             </div>
+           </div>
+
+           <div class="space-y-2">
+             <div class="flex justify-between items-end">
+               <span class="text-sm font-medium text-slate-400">Current List (<span id="count-display">${state.names.length}</span>)</span>
+               ${state.names.length > 0 ? '<button id="clear-btn" class="text-xs text-red-400 hover:text-red-300 underline">Clear All</button>' : ''}
+             </div>
+
+             <ul class="bg-slate-900/50 rounded-lg border border-slate-700/50 max-h-48 overflow-y-auto divide-y divide-slate-700/50">
+               ${state.names.length === 0
+               ? '<li class="p-4 text-center text-slate-500 italic text-sm">No names added yet.</li>'
+               : state.names.map(name => `
+                 <li class="flex justify-between items-center p-3 hover:bg-slate-700/30 transition-colors group">
+                   <span class="text-white">${name}</span>
+                   <button data-remove="${name}" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" title="Remove">&times;</button>
+                 </li>
+               `).join('')}
+             </ul>
+           </div>
+
+           ${!state.generatedLink ? `
+             <button id="generate-btn" ${state.names.length < 2 ? 'disabled' : ''}
+                     class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold text-lg shadow-lg hover:shadow-emerald-900/20 transition-all flex justify-center items-center gap-2">
+               <i data-lucide="link" width="20"></i> Generate Magic Link
+             </button>
+           ` : `
+             <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-4 space-y-3 animate-[fadeIn_0.5s_ease-out]">
+               <div class="flex items-start gap-3">
+                 <div class="bg-emerald-500/10 p-2 rounded-full text-emerald-400">
+                   <i data-lucide="check" width="20"></i>
+                 </div>
+                 <div>
+                   <h3 class="font-semibold text-emerald-400">Link Ready!</h3>
+                   <p class="text-sm text-slate-400">Send this URL to everyone. It contains the names and a safe assignment key.</p>
+                 </div>
+               </div>
+
+               <div class="flex gap-2">
+                 <input readonly value="${state.generatedLink}"
+                        class="flex-1 bg-black/30 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono truncate" />
+                 <button id="copy-btn" class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-colors" title="Copy">
+                   <i data-lucide="copy" width="18"></i>
+                 </button>
+               </div>
+               <p id="copy-feedback" class="text-emerald-400 text-sm text-center hidden">Copied to clipboard!</p>
+
+               <button id="reset-btn" class="text-xs text-slate-500 hover:text-slate-300 underline w-full text-center">
+                 Reset and edit list
+               </button>
+             </div>
+           `}
+         </div>
+       `;
+       container.innerHTML = html;
+       attachCreateListeners();
+     }
+
+     function renderViewMode(container) {
+       let html = '';
+
+       if (!state.reveal) {
+         html = `
+           <div class="space-y-6 text-center">
+             <div class="bg-slate-700/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 text-red-400 ring-4 ring-slate-800">
+               <i data-lucide="user" width="32"></i>
+             </div>
+
+             <div class="space-y-2">
+               <h2 class="text-2xl font-bold text-white">Who are you?</h2>
+               <p class="text-slate-400 text-sm">Select your name to see your match.</p>
+             </div>
+
+             ${state.isLocked ? `
+               <div class="bg-amber-500/10 border border-amber-500/20 text-amber-200 p-4 rounded-lg text-sm flex items-start gap-3 text-left">
+                 <i data-lucide="lock" class="shrink-0 mt-0.5" width="16"></i>
+                 <div>
+                   <span class="font-semibold">Browser Locked.</span>
+                   <p class="opacity-80 mt-1">We found a previous session on this device for <span class="font-bold text-white">${state.currentUser}</span>.</p>
+                 </div>
+               </div>
+             ` : `
+               <div class="relative">
+                 <select id="user-select" class="w-full appearance-none bg-slate-900 border border-slate-600 text-white py-3 px-4 pr-8 rounded-xl focus:ring-2 focus:ring-red-500 outline-none cursor-pointer text-lg text-center">
+                   <option value="">-- Select Your Name --</option>
+                   ${state.names.sort().map(n => `<option value="${n}" ${n === state.currentUser ? 'selected' : ''}>${n}</option>`).join('')}
+                 </select>
+                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                   <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                 </div>
+               </div>
+             `}
+
+             <button id="reveal-btn" ${!state.currentUser ? 'disabled' : ''}
+                     class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold text-lg shadow-lg shadow-red-900/20 transition-all flex justify-center items-center gap-2">
+               <i data-lucide="gift" width="20"></i>
+               ${state.isLocked ? "View My Match" : "Reveal My Match"}
+             </button>
+           </div>
+         `;
+       } else {
+         html = `
+           <div class="text-center py-8">
+             <p class="text-slate-400 uppercase tracking-widest text-xs font-bold mb-4">You are buying a gift for</p>
+
+             <div class="relative inline-block group cursor-default">
+               <div class="absolute inset-0 bg-red-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
+               <h1 class="relative text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-white to-red-400 animate-text-shimmer bg-[length:200%_auto]">
+                 ${state.assignment}
+               </h1>
+             </div>
+           </div>
+         `;
+       }
+
+       container.innerHTML = html;
+       attachViewListeners();
+     }
+
+     function attachCreateListeners() {
+       const form = document.getElementById('add-form');
+       const input = document.getElementById('new-name-input');
+       const addBtn = document.getElementById('add-btn');
+
+       if(input) {
+         input.addEventListener('input', (e) => {
+           const val = e.target.value.trim();
+           addBtn.disabled = !val || state.names.includes(val);
+         });
+       }
+
+       if(form) {
+         form.addEventListener('submit', (e) => {
+           e.preventDefault();
+           const val = input.value.trim();
+           if (val && !state.names.includes(val)) {
+             state.names.push(val);
+             render();
+             setTimeout(() => document.getElementById('new-name-input').focus(), 0);
+           }
+         });
+       }
+
+       document.querySelectorAll('[data-remove]').forEach(btn => {
+         btn.addEventListener('click', (e) => {
+           const nameToRemove = e.currentTarget.getAttribute('data-remove');
+           state.names = state.names.filter(n => n !== nameToRemove);
+           render();
+         });
+       });
+
+       const clearBtn = document.getElementById('clear-btn');
+       if (clearBtn) {
+         clearBtn.addEventListener('click', () => {
+           state.names = [];
+           render();
+         });
+       }
+
+       const genBtn = document.getElementById('generate-btn');
+       if (genBtn) {
+         genBtn.addEventListener('click', () => {
+           let validSeed = null;
+           let attempts = 0;
+           while (validSeed === null && attempts < 1000) {
+             const testSeed = Math.floor(Math.random() * 1000000);
+             if (isSeedValid(state.names, testSeed)) {
+               validSeed = testSeed;
+             }
+             attempts++;
+           }
+
+           if (!validSeed) {
+             alert("Could not generate a valid arrangement. Try adding more names.");
+             return;
+           }
+
+           const dataString = encodeData(state.names);
+           state.generatedLink = `${window.location.origin}${window.location.pathname}?d=${dataString}&s=${validSeed}`;
+           state.seed = validSeed;
+           render();
+         });
+       }
+
+       const copyBtn = document.getElementById('copy-btn');
+       if (copyBtn) {
+         copyBtn.addEventListener('click', () => {
+           navigator.clipboard.writeText(state.generatedLink);
+           const feedback = document.getElementById('copy-feedback');
+           feedback.classList.remove('hidden');
+           setTimeout(() => feedback.classList.add('hidden'), 2000);
+         });
+       }
+
+       const resetBtn = document.getElementById('reset-btn');
+       if (resetBtn) {
+         resetBtn.addEventListener('click', () => {
+           state.generatedLink = '';
+           state.seed = null;
+           render();
+         });
+       }
+
+       const importBtn = document.getElementById('import-btn');
+       const importSection = document.getElementById('import-section');
+       if (importBtn && importSection) {
+         importBtn.addEventListener('click', () => {
+           importSection.classList.toggle('hidden');
+           importBtn.classList.toggle('hidden');
+         });
+       }
+
+       const importCancel = document.getElementById('import-cancel');
+       if (importCancel) {
+         importCancel.addEventListener('click', () => {
+           importSection.classList.add('hidden');
+           importBtn.classList.remove('hidden');
+           document.getElementById('import-input').value = '';
+         });
+       }
+
+       const importSubmit = document.getElementById('import-submit');
+       if (importSubmit) {
+         importSubmit.addEventListener('click', () => {
+           const input = document.getElementById('import-input').value;
+           const names = input.split(',')
+                              .map(n => n.trim())
+                              .filter(n => n && !state.names.includes(n));
+           state.names.push(...names);
+           render();
+         });
+       }
+     }
+
+     function attachViewListeners() {
+       const select = document.getElementById('user-select');
+       const revealBtn = document.getElementById('reveal-btn');
+
+       if (select) {
+         select.addEventListener('change', (e) => {
+           state.currentUser = e.target.value;
+           render();
+         });
+       }
+
+       if (revealBtn) {
+         revealBtn.addEventListener('click', () => {
+           const target = getAssignment(state.currentUser, state.names, state.seed);
+           state.assignment = target;
+           state.reveal = true;
+           state.isLocked = true;
+
+           const storageKey = `santa_lock_${state.seed}`;
+           localStorage.setItem(storageKey, state.currentUser);
+
+           render();
+         });
+       }
+     }
+
+     function init() {
+       const params = new URLSearchParams(window.location.search);
+       const dataParam = params.get('d');
+       const seedParam = params.get('s');
+
+       if (dataParam && seedParam) {
+         const decodedNames = decodeData(dataParam);
+         const parsedSeed = parseInt(seedParam, 10);
+
+         if (decodedNames && !isNaN(parsedSeed)) {
+           state.names = decodedNames;
+           state.seed = parsedSeed;
+           state.mode = 'view';
+
+           const storageKey = `santa_lock_${parsedSeed}`;
+           const storedUser = localStorage.getItem(storageKey);
+
+           if (storedUser && decodedNames.includes(storedUser)) {
+             state.currentUser = storedUser;
+             state.isLocked = true;
+             state.assignment = getAssignment(storedUser, decodedNames, parsedSeed);
+             state.reveal = true;
+           }
+         } else {
+           state.mode = 'create';
+         }
+       } else {
+         state.mode = 'create';
+       }
+
+       render();
+       lucide.createIcons();
+     }
+
+     init();
+
+    </script>
+  </body>
+</html>
