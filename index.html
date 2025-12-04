@@ -378,6 +378,13 @@
         animation: shimmer 3s linear infinite;
       }
 
+      .result .note {
+        margin-top: 2rem;
+        font-size: 0.75rem;
+        color: #64748b;
+        font-style: italic;
+      }
+
       @keyframes shimmer {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
@@ -618,6 +625,7 @@
            <div class="result">
              <p class="label">You are buying a gift for</p>
              <p class="name">${state.assignment}</p>
+             <p class="note">Yes, yes, you could open this page in incognito or another browser and pick someone else. Don't be that guy.</p>
            </div>
          `;
        }
