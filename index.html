@@ -516,12 +516,12 @@
            <div class="space-y-sm">
              <h2>Add Participants</h2>
              <form id="add-form" class="form-row">
-               <input type="text" id="new-name-input" placeholder="Enter name (e.g. Alice)">
+               <input type="text" id="new-name-input" placeholder="Enter name (e.g. Phil)">
                <button type="submit" id="add-btn" class="btn-primary" disabled>Add</button>
              </form>
              <button id="import-btn" class="link-btn">Import comma-separated list</button>
              <div id="import-section" class="import-section">
-               <textarea id="import-input" placeholder="e.g. Alice, Bob, Charlie" rows="2"></textarea>
+               <textarea id="import-input" placeholder="e.g. Phil, Michael, Claire" rows="2"></textarea>
                <div class="import-actions">
                  <button id="import-submit" class="btn-primary">Import</button>
                  <button id="import-cancel" class="link-btn">Cancel</button>
@@ -662,6 +662,8 @@
        if (clearBtn) {
          clearBtn.addEventListener('click', () => {
            state.names = [];
+           state.generatedLink = '';
+           state.seed = null;
            render();
          });
        }
