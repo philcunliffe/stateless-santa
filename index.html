@@ -4,56 +4,436 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secret Santa</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-     @keyframes text-shimmer {
-       0% { background-position: 0% 50%; }
-       50% { background-position: 100% 50%; }
-       100% { background-position: 0% 50%; }
-     }
-     .animate-text-shimmer {
-       animation: text-shimmer 3s linear infinite;
-     }
-     ::-webkit-scrollbar {
-       width: 8px;
-     }
-     ::-webkit-scrollbar-track {
-       background: rgba(30, 41, 59, 0.5);
-     }
-     ::-webkit-scrollbar-thumb {
-       background: #475569;
-       border-radius: 4px;
-     }
-     ::-webkit-scrollbar-thumb:hover {
-       background: #64748b;
-     }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0f172a;
+        color: #f1f5f9;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 3rem 1rem;
+      }
+
+      ::selection {
+        background: #ef4444;
+        color: white;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      header h1 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: white;
+      }
+
+      header h1 span {
+        color: #ef4444;
+      }
+
+      header p {
+        color: #94a3b8;
+        margin-top: 0.5rem;
+      }
+
+      main {
+        width: 100%;
+        max-width: 28rem;
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid #334155;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        backdrop-filter: blur(12px);
+      }
+
+      .space-y > * + * {
+        margin-top: 1.5rem;
+      }
+
+      .space-y-sm > * + * {
+        margin-top: 0.5rem;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: white;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      input[type="text"], textarea, select {
+        flex: 1;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid #475569;
+        color: white;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      input[type="text"]:focus, textarea:focus, select:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+      }
+
+      input::placeholder, textarea::placeholder {
+        color: #475569;
+      }
+
+      button {
+        cursor: pointer;
+        border: none;
+        font-size: 1rem;
+        transition: background-color 0.2s, opacity 0.2s;
+      }
+
+      .btn-primary {
+        background: #ef4444;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+      }
+
+      .btn-primary:hover {
+        background: #dc2626;
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-green {
+        background: #059669;
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        font-weight: 700;
+        font-size: 1.125rem;
+        width: 100%;
+      }
+
+      .btn-green:hover {
+        background: #047857;
+      }
+
+      .btn-green:disabled {
+        background: #334155;
+        color: #64748b;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background: #334155;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+      }
+
+      .btn-secondary:hover {
+        background: #475569;
+      }
+
+      .link-btn {
+        background: none;
+        color: #94a3b8;
+        text-decoration: underline;
+        padding: 0;
+        font-size: 0.875rem;
+      }
+
+      .link-btn:hover {
+        color: #cbd5e1;
+      }
+
+      .link-btn-red {
+        color: #f87171;
+      }
+
+      .link-btn-red:hover {
+        color: #fca5a5;
+      }
+
+      .list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .list-header span {
+        font-size: 0.875rem;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+
+      .name-list {
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(51, 65, 85, 0.5);
+        border-radius: 0.5rem;
+        max-height: 12rem;
+        overflow-y: auto;
+        list-style: none;
+      }
+
+      .name-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      }
+
+      .name-list li:last-child {
+        border-bottom: none;
+      }
+
+      .name-list li:hover {
+        background: rgba(51, 65, 85, 0.3);
+      }
+
+      .name-list .empty {
+        text-align: center;
+        color: #64748b;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 1rem;
+      }
+
+      .remove-btn {
+        background: none;
+        color: #64748b;
+        font-size: 1.25rem;
+        padding: 0 0.25rem;
+        opacity: 0;
+        transition: opacity 0.2s, color 0.2s;
+      }
+
+      .name-list li:hover .remove-btn {
+        opacity: 1;
+      }
+
+      .remove-btn:hover {
+        color: #f87171;
+      }
+
+      .success-box {
+        background: #0f172a;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 0.75rem;
+        padding: 1rem;
+      }
+
+      .success-box .header {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+      }
+
+      .success-box .icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: #34d399;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .success-box h3 {
+        color: #34d399;
+        font-weight: 600;
+      }
+
+      .success-box p {
+        color: #94a3b8;
+        font-size: 0.875rem;
+      }
+
+      .copy-row {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .copy-row input {
+        font-family: monospace;
+        font-size: 0.875rem;
+        color: #cbd5e1;
+      }
+
+      .feedback {
+        color: #34d399;
+        font-size: 0.875rem;
+        text-align: center;
+        display: none;
+      }
+
+      .feedback.show {
+        display: block;
+      }
+
+      .view-header {
+        text-align: center;
+      }
+
+      .avatar {
+        width: 4rem;
+        height: 4rem;
+        background: rgba(51, 65, 85, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: #f87171;
+        box-shadow: 0 0 0 4px #1e293b;
+      }
+
+      .view-header h2 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .view-header p {
+        color: #94a3b8;
+        font-size: 0.875rem;
+      }
+
+      select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        font-size: 1.125rem;
+        text-align: center;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+      }
+
+      .lock-notice {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        color: #fde68a;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        text-align: left;
+      }
+
+      .lock-notice strong {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+
+      .lock-notice .name {
+        color: white;
+        font-weight: 700;
+      }
+
+      .result {
+        text-align: center;
+        padding: 2rem 0;
+      }
+
+      .result .label {
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .result .name {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #f87171, white, #f87171);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 3s linear infinite;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      .import-section {
+        display: none;
+      }
+
+      .import-section.show {
+        display: block;
+      }
+
+      .import-section textarea {
+        width: 100%;
+        resize: none;
+      }
+
+      .import-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(30, 41, 59, 0.5);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
     </style>
   </head>
-  <body class="bg-slate-900 text-slate-100 font-sans selection:bg-red-500 selection:text-white flex flex-col items-center py-12 px-4 relative overflow-x-hidden min-h-screen">
-
-    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20 z-0">
-      <div class="absolute top-10 left-10 text-slate-700 animate-pulse">
-        <i data-lucide="sparkles" width="48" height="48"></i>
-      </div>
-      <div class="absolute bottom-20 right-10 text-slate-700 animate-bounce">
-        <i data-lucide="gift" width="64" height="64"></i>
-      </div>
-    </div>
-
-    <header class="z-10 mb-8 text-center">
-      <div class="flex items-center justify-center gap-3 mb-2">
-        <i data-lucide="gift" class="text-red-500" width="32" height="32"></i>
-        <h1 class="text-4xl font-extrabold tracking-tight text-white">
-          Secret <span class="text-red-500">Santa</span>
-        </h1>
-      </div>
-      <p class="text-slate-400">Stateless, client-side, magic.</p>
+  <body>
+    <header>
+      <h1>Secret <span>Santa</span></h1>
+      <p>Stateless, client-side, magic.</p>
     </header>
 
-    <main class="z-10 w-full max-w-md bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl p-6 sm:p-8 transition-all duration-300">
+    <main>
       <div id="app-content">
-        <div class="text-center text-slate-400 py-8">Loading North Pole Database...</div>
+        <div style="text-align: center; color: #94a3b8; padding: 2rem 0;">Loading...</div>
       </div>
     </main>
 
@@ -128,90 +508,66 @@
        } else if (state.mode === 'view') {
          renderViewMode(container);
        }
-
-       lucide.createIcons();
      }
 
      function renderCreateMode(container) {
        const html = `
-         <div class="space-y-6">
-           <div class="space-y-2">
-             <h2 class="text-xl font-semibold flex items-center gap-2 text-white">
-               <i data-lucide="user" class="text-red-400" width="20"></i>
-               Add Participants
-             </h2>
-             <form id="add-form" class="flex gap-2">
-               <input type="text" id="new-name-input" placeholder="Enter name (e.g. Alice)"
-                      class="flex-1 bg-slate-900/80 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 outline-none transition-all placeholder:text-slate-600">
-               <button type="submit" id="add-btn" disabled
-                       class="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                 Add
-               </button>
+         <div class="space-y">
+           <div class="space-y-sm">
+             <h2>Add Participants</h2>
+             <form id="add-form" class="form-row">
+               <input type="text" id="new-name-input" placeholder="Enter name (e.g. Alice)">
+               <button type="submit" id="add-btn" class="btn-primary" disabled>Add</button>
              </form>
-             <div class="flex items-center gap-2 text-sm">
-               <button id="import-btn" class="text-slate-400 hover:text-slate-300 underline">
-                 Import comma-separated list
-               </button>
-             </div>
-             <div id="import-section" class="hidden space-y-2">
-               <textarea id="import-input" placeholder="e.g. Alice, Bob, Charlie"
-                         class="w-full bg-slate-900/80 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 outline-none transition-all placeholder:text-slate-600 text-sm" rows="2"></textarea>
-               <div class="flex gap-2">
-                 <button id="import-submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors">
-                   Import
-                 </button>
-                 <button id="import-cancel" class="text-slate-400 hover:text-slate-300 px-3 py-1 text-sm">
-                   Cancel
-                 </button>
+             <button id="import-btn" class="link-btn">Import comma-separated list</button>
+             <div id="import-section" class="import-section">
+               <textarea id="import-input" placeholder="e.g. Alice, Bob, Charlie" rows="2"></textarea>
+               <div class="import-actions">
+                 <button id="import-submit" class="btn-primary">Import</button>
+                 <button id="import-cancel" class="link-btn">Cancel</button>
                </div>
              </div>
            </div>
 
-           <div class="space-y-2">
-             <div class="flex justify-between items-end">
-               <span class="text-sm font-medium text-slate-400">Current List (<span id="count-display">${state.names.length}</span>)</span>
-               ${state.names.length > 0 ? '<button id="clear-btn" class="text-xs text-red-400 hover:text-red-300 underline">Clear All</button>' : ''}
+           <div class="space-y-sm">
+             <div class="list-header">
+               <span>Current List (${state.names.length})</span>
+               ${state.names.length > 0 ? '<button id="clear-btn" class="link-btn link-btn-red">Clear All</button>' : ''}
              </div>
 
-             <ul class="bg-slate-900/50 rounded-lg border border-slate-700/50 max-h-48 overflow-y-auto divide-y divide-slate-700/50">
+             <ul class="name-list">
                ${state.names.length === 0
-               ? '<li class="p-4 text-center text-slate-500 italic text-sm">No names added yet.</li>'
+               ? '<li class="empty">No names added yet.</li>'
                : state.names.map(name => `
-                 <li class="flex justify-between items-center p-3 hover:bg-slate-700/30 transition-colors group">
-                   <span class="text-white">${name}</span>
-                   <button data-remove="${name}" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" title="Remove">&times;</button>
+                 <li>
+                   <span>${name}</span>
+                   <button data-remove="${name}" class="remove-btn">&times;</button>
                  </li>
                `).join('')}
              </ul>
            </div>
 
            ${!state.generatedLink ? `
-             <button id="generate-btn" ${state.names.length < 2 ? 'disabled' : ''}
-                     class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold text-lg shadow-lg hover:shadow-emerald-900/20 transition-all flex justify-center items-center gap-2">
-               <i data-lucide="link" width="20"></i> Generate Magic Link
+             <button id="generate-btn" class="btn-green" ${state.names.length < 2 ? 'disabled' : ''}>
+               Generate Magic Link
              </button>
            ` : `
-             <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-4 space-y-3 animate-[fadeIn_0.5s_ease-out]">
-               <div class="flex items-start gap-3">
-                 <div class="bg-emerald-500/10 p-2 rounded-full text-emerald-400">
-                   <i data-lucide="check" width="20"></i>
-                 </div>
+             <div class="success-box">
+               <div class="header">
+                 <div class="icon">✓</div>
                  <div>
-                   <h3 class="font-semibold text-emerald-400">Link Ready!</h3>
-                   <p class="text-sm text-slate-400">Send this URL to everyone. It contains the names and a safe assignment key.</p>
+                   <h3>Link Ready!</h3>
+                   <p>Send this URL to everyone. It contains the names and a safe assignment key.</p>
                  </div>
                </div>
 
-               <div class="flex gap-2">
-                 <input readonly value="${state.generatedLink}"
-                        class="flex-1 bg-black/30 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono truncate" />
-                 <button id="copy-btn" class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-colors" title="Copy">
-                   <i data-lucide="copy" width="18"></i>
-                 </button>
+               <div class="copy-row">
+                 <input type="text" readonly value="${state.generatedLink}">
+                 <button id="copy-btn" class="btn-secondary">Copy</button>
                </div>
-               <p id="copy-feedback" class="text-emerald-400 text-sm text-center hidden">Copied to clipboard!</p>
+               <p id="copy-feedback" class="feedback">Copied to clipboard!</p>
 
-               <button id="reset-btn" class="text-xs text-slate-500 hover:text-slate-300 underline w-full text-center">
+               <button id="reset-btn" class="link-btn" style="width: 100%; text-align: center; margin-top: 0.75rem;">
                  Reset and edit list
                </button>
              </div>
@@ -227,54 +583,41 @@
 
        if (!state.reveal) {
          html = `
-           <div class="space-y-6 text-center">
-             <div class="bg-slate-700/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 text-red-400 ring-4 ring-slate-800">
-               <i data-lucide="user" width="32"></i>
+           <div class="space-y view-header">
+             <div class="avatar">
+               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                 <circle cx="12" cy="7" r="4"/>
+               </svg>
              </div>
 
-             <div class="space-y-2">
-               <h2 class="text-2xl font-bold text-white">Who are you?</h2>
-               <p class="text-slate-400 text-sm">Select your name to see your match.</p>
+             <div>
+               <h2>Who are you?</h2>
+               <p>Select your name to see your match.</p>
              </div>
 
              ${state.isLocked ? `
-               <div class="bg-amber-500/10 border border-amber-500/20 text-amber-200 p-4 rounded-lg text-sm flex items-start gap-3 text-left">
-                 <i data-lucide="lock" class="shrink-0 mt-0.5" width="16"></i>
-                 <div>
-                   <span class="font-semibold">Browser Locked.</span>
-                   <p class="opacity-80 mt-1">We found a previous session on this device for <span class="font-bold text-white">${state.currentUser}</span>.</p>
-                 </div>
+               <div class="lock-notice">
+                 <strong>Browser Locked.</strong>
+                 We found a previous session on this device for <span class="name">${state.currentUser}</span>.
                </div>
              ` : `
-               <div class="relative">
-                 <select id="user-select" class="w-full appearance-none bg-slate-900 border border-slate-600 text-white py-3 px-4 pr-8 rounded-xl focus:ring-2 focus:ring-red-500 outline-none cursor-pointer text-lg text-center">
-                   <option value="">-- Select Your Name --</option>
-                   ${state.names.sort().map(n => `<option value="${n}" ${n === state.currentUser ? 'selected' : ''}>${n}</option>`).join('')}
-                 </select>
-                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                   <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                 </div>
-               </div>
+               <select id="user-select">
+                 <option value="">-- Select Your Name --</option>
+                 ${state.names.sort().map(n => `<option value="${n}" ${n === state.currentUser ? 'selected' : ''}>${n}</option>`).join('')}
+               </select>
              `}
 
-             <button id="reveal-btn" ${!state.currentUser ? 'disabled' : ''}
-                     class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold text-lg shadow-lg shadow-red-900/20 transition-all flex justify-center items-center gap-2">
-               <i data-lucide="gift" width="20"></i>
+             <button id="reveal-btn" class="btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1.125rem; font-weight: 700; border-radius: 0.75rem;" ${!state.currentUser ? 'disabled' : ''}>
                ${state.isLocked ? "View My Match" : "Reveal My Match"}
              </button>
            </div>
          `;
        } else {
          html = `
-           <div class="text-center py-8">
-             <p class="text-slate-400 uppercase tracking-widest text-xs font-bold mb-4">You are buying a gift for</p>
-
-             <div class="relative inline-block group cursor-default">
-               <div class="absolute inset-0 bg-red-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
-               <h1 class="relative text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-white to-red-400 animate-text-shimmer bg-[length:200%_auto]">
-                 ${state.assignment}
-               </h1>
-             </div>
+           <div class="result">
+             <p class="label">You are buying a gift for</p>
+             <p class="name">${state.assignment}</p>
            </div>
          `;
        }
@@ -353,8 +696,8 @@
          copyBtn.addEventListener('click', () => {
            navigator.clipboard.writeText(state.generatedLink);
            const feedback = document.getElementById('copy-feedback');
-           feedback.classList.remove('hidden');
-           setTimeout(() => feedback.classList.add('hidden'), 2000);
+           feedback.classList.add('show');
+           setTimeout(() => feedback.classList.remove('show'), 2000);
          });
        }
 
@@ -371,15 +714,15 @@
        const importSection = document.getElementById('import-section');
        if (importBtn && importSection) {
          importBtn.addEventListener('click', () => {
-           importSection.classList.toggle('hidden');
-           importBtn.classList.toggle('hidden');
+           importSection.classList.add('show');
+           importBtn.classList.add('hidden');
          });
        }
 
        const importCancel = document.getElementById('import-cancel');
        if (importCancel) {
          importCancel.addEventListener('click', () => {
-           importSection.classList.add('hidden');
+           importSection.classList.remove('show');
            importBtn.classList.remove('hidden');
            document.getElementById('import-input').value = '';
          });
@@ -455,7 +798,6 @@
        }
 
        render();
-       lucide.createIcons();
      }
 
      init();
